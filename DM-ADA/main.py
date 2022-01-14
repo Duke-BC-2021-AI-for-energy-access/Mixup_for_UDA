@@ -16,6 +16,9 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataroot', required=True, help='path to source dataset')
+    parser.add_argument('--source_dataset', default='svhn', help='name of the source dataset')
+    parser.add_argument('--target_dataset', default='mnist', help='name of the target dataset')
+
     parser.add_argument('--checkpoint', type=str, default=None, help='pretrained model')
     parser.add_argument('--workers', type=int, help='number of data loading workers', default=2)
     parser.add_argument('--batchSize', type=int, default=100, help='input batch size')
@@ -34,8 +37,6 @@ def main():
     parser.add_argument('--lrd', type=float, default=0.0001, help='learning rate decay, default=0.0001')
     parser.add_argument('--gamma', type=float, default = 0.3, help='multiplicative factor for target adv. loss')
     parser.add_argument('--delta', type=float, default = 0.3, help='multiplicative factor for mix adv. loss')
-    parser.add_argument('--source_dataset', default='svhn', help='name of the source dataset')
-    parser.add_argument('--target_dataset', default='mnist', help='name of the target dataset')
     parser.add_argument('--alpha', type=float, default = 2.0, help='the hyperparameter for beta distribution')
     parser.add_argument('--clip_thr', type = float, default = 0.1, help='the threshold of mixup ratio clipping')
 
@@ -108,6 +109,7 @@ def main():
     target_train = dset.ImageFolder(root=target_train_root, transform=transform_target)
     target_val = dset.ImageFolder(root=target_val_root, transform=transform_target)
 
+    #####Pass in file names and read them into data loader
     source_trainloader = torch.utils.data.DataLoader(source_train, batch_size=opt.batchSize, shuffle=True,
                                                      num_workers=opt.workers, drop_last=True)
     source_valloader = torch.utils.data.DataLoader(source_val, batch_size=opt.batchSize, shuffle=False,
@@ -117,6 +119,7 @@ def main():
     target_valloader = torch.utils.data.DataLoader(target_val, batch_size=opt.batchSize, shuffle=False,
                                                      num_workers=opt.workers, drop_last=False)
 
+    ###Update nclasses = 1
     nclasses = len(source_train.classes)
     
     # Training
