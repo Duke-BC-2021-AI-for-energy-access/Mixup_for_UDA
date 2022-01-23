@@ -12,12 +12,15 @@ import torchvision.transforms as transforms
 import numpy as np
 import trainer_mixed
 
+from dataloader import TurbineDataset
+
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataroot', required=True, help='path to source dataset')
-    parser.add_argument('--source_dataset', default='svhn', help='name of the source dataset')
-    parser.add_argument('--target_dataset', default='mnist', help='name of the target dataset')
+    parser.add_argument('--src_train_txt', default='/scratch/public/txt_files/MW_baseline/train_MW_val_MW_imgs.txt', help='path to src train text file')
+    parser.add_argument('--src_test_txt', default='/scratch/public/domain_experiment/BC_team_domain_experiment/Train SW Val MW 100 real 75 syn/baseline/val_img_paths.txt', help='path to src test text file')
+    parser.add_argument('--dst_train_txt', default='/scratch/public/txt_files/MW_baseline/train_SW_val_MW_imgs.txt ', help='path to dst train text file')
+    parser.add_argument('--dst_test_txt', default='/scratch/public/domain_experiment/BC_team_domain_experiment/Train MW Val SW 100 real 75 syn/baseline/val_img_paths.txt', help='path to dst test text file')
 
     parser.add_argument('--checkpoint', type=str, default=None, help='pretrained model')
     parser.add_argument('--workers', type=int, help='number of data loading workers', default=2)
@@ -90,12 +93,12 @@ def main():
     mean = np.array([0.44, 0.44, 0.44])
     std = np.array([0.19, 0.19, 0.19])
 
-    # define the directory for train and validation
-    source_train_root = os.path.join(opt.dataroot, opt.source_dataset, 'trainset')
-    source_val_root = os.path.join(opt.dataroot, opt.source_dataset, 'testset')
-    target_train_root = os.path.join(opt.dataroot, opt.target_dataset, 'trainset')
-    target_val_root = os.path.join(opt.dataroot, opt.target_dataset, 'testset')
+    opt.src_train_txt
+    opt.src_test_txt
+    opt.dst_train_txt
+    opt.dst_test_txt
 
+    # they resized things to this new variable
     # define the preprocess operation
     resize_shape = (opt.imageSize, opt.imageSize)
     transform_source = transforms.Compose(
@@ -104,10 +107,10 @@ def main():
         [transforms.Resize(resize_shape), transforms.ToTensor(), transforms.Normalize(mean, std)])
 
     # define dataloaders
-    source_train = dset.ImageFolder(root=source_train_root, transform=transform_source)
-    source_val = dset.ImageFolder(root=source_val_root, transform=transform_source)
-    target_train = dset.ImageFolder(root=target_train_root, transform=transform_target)
-    target_val = dset.ImageFolder(root=target_val_root, transform=transform_target)
+    source_train = TurbineDataset(opt.src_train_txt)
+    source_val = TurbineDataset(opt.src_val_txt)
+    target_train = TurbineDataset(opt.dst_train_txt)
+    target_val = TurbineDataset(opt.dst_val_txt)
 
     #####Pass in file names and read them into data loader
     source_trainloader = torch.utils.data.DataLoader(source_train, batch_size=opt.batchSize, shuffle=True,
@@ -132,6 +135,21 @@ def main():
         sourceonly_trainer.train()
     else:
         raise ValueError('method argument should be DM-ADA or sourceonly')
+
+def create_temp_folder_and_move_images(temp_folder, text_file):
+    """Removes and creates a temporary folder named temp_folder and copies each image in text_file to temp_folder
+
+    Args:
+        temp_folder (str): path to the temp folder
+        text_file (str): path to the text file containing each image to be copied
+    """
+    os.system(f'rm -rf "{temp_folder}"')
+    os.system(f'mkdir -p "{temp_folder}"')
+    with open(text_file, 'r') as f:
+        files = f.read().split('\n')
+        for file in files:
+            os.system(f'cp "{file}" "{temp_folder}"')
+
 
 if __name__ == '__main__':
     main()
