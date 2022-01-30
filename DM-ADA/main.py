@@ -11,6 +11,7 @@ import torchvision.datasets as dset
 import torchvision.transforms as transforms
 import numpy as np
 import trainer_mixed
+import logging
 
 from dataloader import TurbineDataset
 
@@ -19,12 +20,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--src_train_txt', default='/scratch/public/txt_files/MW_baseline/train_MW_val_MW_imgs.txt', help='path to src train text file')
     parser.add_argument('--src_test_txt', default='/scratch/public/domain_experiment/BC_team_domain_experiment/Train SW Val MW 100 real 75 syn/baseline/val_img_paths.txt', help='path to src test text file')
-    parser.add_argument('--dst_train_txt', default='/scratch/public/txt_files/MW_baseline/train_SW_val_MW_imgs.txt ', help='path to dst train text file')
+    parser.add_argument('--dst_train_txt', default='/scratch/public/txt_files/MW_baseline/train_SW_val_MW_imgs.txt', help='path to dst train text file')
     parser.add_argument('--dst_test_txt', default='/scratch/public/domain_experiment/BC_team_domain_experiment/Train MW Val SW 100 real 75 syn/baseline/val_img_paths.txt', help='path to dst test text file')
 
     parser.add_argument('--checkpoint', type=str, default=None, help='pretrained model')
-    parser.add_argument('--workers', type=int, help='number of data loading workers', default=2)
-    parser.add_argument('--batchSize', type=int, default=100, help='input batch size')
+    parser.add_argument('--workers', type=int, help='number of data loading workers', default=20)
+    parser.add_argument('--batchSize', type=int, default=10, help='input batch size')
     parser.add_argument('--imageSize', type=int, default=32, help='the height / width of the input image to network')
     parser.add_argument('--nz', type=int, default=512, help='size of the latent z vector')
     parser.add_argument('--ngf', type=int, default=64, help='Number of filters to use in the generator network')
@@ -98,6 +99,8 @@ def main():
     opt.dst_train_txt
     opt.dst_test_txt
 
+    logging.info('Starting to load images')
+    print('Starting to load images')
     # they resized things to this new variable
     # define the preprocess operation
     resize_shape = (opt.imageSize, opt.imageSize)
@@ -107,10 +110,10 @@ def main():
         [transforms.Resize(resize_shape), transforms.ToTensor(), transforms.Normalize(mean, std)])
 
     # define dataloaders
-    source_train = TurbineDataset(opt.src_train_txt)
-    source_val = TurbineDataset(opt.src_val_txt)
-    target_train = TurbineDataset(opt.dst_train_txt)
-    target_val = TurbineDataset(opt.dst_val_txt)
+    source_train = TurbineDataset(opt.src_train_txt, transform=transform_source)
+    source_val = TurbineDataset(opt.src_test_txt, transform=transform_source)
+    target_train = TurbineDataset(opt.dst_train_txt, transform=transform_target)
+    target_val = TurbineDataset(opt.dst_test_txt, transform=transform_target)
 
     #####Pass in file names and read them into data loader
     source_trainloader = torch.utils.data.DataLoader(source_train, batch_size=opt.batchSize, shuffle=True,
@@ -123,8 +126,10 @@ def main():
                                                      num_workers=opt.workers, drop_last=False)
 
     ###Update nclasses = 1
-    nclasses = len(source_train.classes)
+    # nclasses = len(source_train.classes)
+    nclasses = 1
     
+    logging.info('Starting training')
     # Training
     if opt.method == 'DM-ADA':
         DM_ADA_trainer = trainer_mixed.DM_ADA(opt, nclasses, mean, std, source_trainloader,
@@ -136,19 +141,19 @@ def main():
     else:
         raise ValueError('method argument should be DM-ADA or sourceonly')
 
-def create_temp_folder_and_move_images(temp_folder, text_file):
-    """Removes and creates a temporary folder named temp_folder and copies each image in text_file to temp_folder
+# def create_temp_folder_and_move_images(temp_folder, text_file):
+#     """Removes and creates a temporary folder named temp_folder and copies each image in text_file to temp_folder
 
-    Args:
-        temp_folder (str): path to the temp folder
-        text_file (str): path to the text file containing each image to be copied
-    """
-    os.system(f'rm -rf "{temp_folder}"')
-    os.system(f'mkdir -p "{temp_folder}"')
-    with open(text_file, 'r') as f:
-        files = f.read().split('\n')
-        for file in files:
-            os.system(f'cp "{file}" "{temp_folder}"')
+#     Args:
+#         temp_folder (str): path to the temp folder
+#         text_file (str): path to the text file containing each image to be copied
+#     """
+#     os.system(f'rm -rf "{temp_folder}"')
+#     os.system(f'mkdir -p "{temp_folder}"')
+#     with open(text_file, 'r') as f:
+#         files = f.read().split('\n')
+#         for file in files:
+#             os.system(f'cp "{file}" "{temp_folder}"')
 
 
 if __name__ == '__main__':

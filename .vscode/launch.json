@@ -1,0 +1,25 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Run DM-ADA",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/yl708/Mixup_for_UDA/DM-ADA/main.py",
+            "console": "integratedTerminal",
+            "cwd": "/home/yl708/Mixup_for_UDA/DM-ADA",
+            // "args": []
+        }
+
+    ]
+}
